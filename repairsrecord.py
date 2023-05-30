@@ -1,6 +1,7 @@
 from datetime import datetime
 import obsws_python as obs
 import PySimpleGUI as sg
+import time
 import sys
 import os
 
@@ -46,7 +47,7 @@ def get_new_name(incident):
         # check current date and time and formats name and path of new video file under variable "new_path"
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime("%m-%d-%Y_%H-%M")
-        filename = f"INC{incident}_{formatted_datetime}" + ".mkv"
+        filename = f"INC{incident}" + ".mkv"
         record_directory_call = obs_ws.send("GetRecordDirectory")
         global new_path
         new_path = record_directory_call.record_directory + f"\{filename}"
@@ -73,6 +74,8 @@ def on_record_state_changed(data):
     state = data.output_active
 
 
+rename_counter = 0
+
 def rename(old, new):
     """rename a file using the rename method from the os module
 
@@ -80,7 +83,36 @@ def rename(old, new):
         old (string): path to the original video recording
         new (string): path to the new recording name
     """
-    os.rename(old, new)
+    global rename_counter
+    rename_counter += 1
+    
+    try:
+        if state is False:
+            os.rename(old, new)
+            rename_counter = 0
+        elif state is True and rename_counter <=10:
+            time.sleep(1)
+            rename(old, new)
+            
+    except FileExistsError:
+        paths = new.split("//")
+        last_path = paths[-1].split(".")
+        filename = last_path[0]
+        if "_" in filename:
+            filenum = filename[filename.index("_")+1:]
+            new_filename = filename.replace(filenum, str(int(filenum)+1))
+            new = new.replace(filename, new_filename)
+        else:
+            new_filename = filename + "_1"
+            new = new.replace(filename, new_filename)
+        if state is False:
+            rename(old, new)
+            rename_counter = 0
+        elif state is True and rename_counter <=10:
+            time.sleep(1)
+            rename(old, new)
+    
+        
     
     
 def start_recording():
@@ -107,12 +139,12 @@ cl.callback.register(on_record_state_changed)
 # ------------------------------------------------------------------------------------
 
 layout = [[sg.Text("Enter incident number (Numbers ONLY): ")],
-            [sg.Push(), sg.Input(size=(40), key="incident", justification="c"), sg.Button("OK", key="set"), sg.Push()],
-            [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
-            [sg.Push(), sg.Button("Record", key="record", disabled=True, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
+            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Button("OK", key="set"), sg.Push()],
+            [sg.Push(), sg.Text("Please press OK before recording", key="status_text"), sg.Push()],
+            [sg.Push(), sg.Button("Start Recording", key="record", disabled=True, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
 
 
-window = sg.Window("DTS Repairs Record", layout=layout, size=(325,130))
+window = sg.Window("DTS Repairs Record", layout=layout, size=(350,130), keep_on_top=True)
 
 
 while True:
@@ -122,6 +154,7 @@ while True:
         get_new_name(values["incident"])
         if record_ready is True:
             window["record"].update(disabled=False)
+            window["status_text"].update("Ready to record")
         
     if event == "record":
         start_recording()
@@ -130,10 +163,12 @@ while True:
         
     
     if event == "stop_recording":
+        time.sleep(2)
+        window["status_text"].update("Renaming...")
         stop_recording()
         window["stop_recording"].update(disabled=True)
         window["record"].update(disabled=True)
-        window["status_text"].update("")
+        window["status_text"].update("Please press OK before recording")
         window["incident"].update("")
 
         
