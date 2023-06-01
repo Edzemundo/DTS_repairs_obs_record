@@ -26,6 +26,12 @@ def connect():
 
 def get_new_name(incident):
     """gets the incident number from user input, formats, and sets the name of the recording to the incident number as well as date and time of video creation
+    
+    Args:
+        incident (string): incident number
+
+    Returns:
+        new path including new filename
     """
     # receive incident number as user input
     # incident = sg.popup_get_text(title="Repairs Record", message="Please enter the incident number (numbers only):")
@@ -44,7 +50,7 @@ def get_new_name(incident):
         # sys.exit()
     
     else:
-        # check current date and time and formats name and path of new video file under variable "new_path"
+        # formats name and path of new video file under variable "new_path"
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime("%m-%d-%Y_%H-%M")
         filename = f"INC{incident}" + ".mkv"
@@ -95,17 +101,21 @@ def rename(old, new):
             rename(old, new)
             
     except FileExistsError:
+        # catches the error flag that appears when there is a file with the same name (incident number) in the directory
         paths = new.split("//")
         last_path = paths[-1].split(".")
         filename = last_path[0]
+        
         if "_" in filename:
             filenum = filename[filename.index("_")+1:]
-            new_filename = filename.replace(filenum, str(int(filenum)+1))
+            new_filename = filename.replace(filenum, str(int(filenum)+1)) #adds an _'number'+1 if there is a video that has been named the same more than once
             new = new.replace(filename, new_filename)
         else:
-            new_filename = filename + "_1"
+            new_filename = filename + "_1" 
             new = new.replace(filename, new_filename)
+            
         if state is False:
+            #renames the file only when there is no longer a recording output from OBS
             rename(old, new)
             rename_counter = 0
         elif state is True and rename_counter <=10:
