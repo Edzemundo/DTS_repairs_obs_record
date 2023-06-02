@@ -37,23 +37,35 @@ def get_new_name(incident):
     # incident = sg.popup_get_text(title="Repairs Record", message="Please enter the incident number (numbers only):")
     
     # checks to see if there is any letters in the input
-    if any(char.isalpha() for char in incident):
-        sg.popup("Only numbers please")
+    allowed_chars = ["i","n","c"]
+    invalid_char = False
+    for char in incident:
+        if char.isalpha():
+            if char.lower() not in allowed_chars:
+                invalid_char = True
+                
+    if invalid_char is True:
+        window["status_text"].update("Invalid incident number")      
         global record_ready
         record_ready = False
         # sys.exit()
         
     # checks to see if there was any input
     elif len(incident) == 0:
-        sg.popup("Please input an incident number")
+        window["status_text"].update("Please input an incident number")
         record_ready = False
         # sys.exit()
     
+
     else:
+        for char in incident:
+            if char.isalpha() or char == " ":
+                incident = incident.replace(char,"")
+        
         # formats name and path of new video file under variable "new_path"
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime("%m-%d-%Y_%H-%M")
-        filename = f"INC{incident}" + ".mkv"
+        filename = f"INC{incident}" + ".mp4"
         record_directory_call = obs_ws.send("GetRecordDirectory")
         global new_path
         new_path = record_directory_call.record_directory + f"\{filename}"
@@ -80,7 +92,6 @@ def on_record_state_changed(data):
     state = data.output_active
 
 
-rename_counter = 0
 
 def rename(old, new):
     """rename a file using the rename method from the os module
@@ -89,14 +100,15 @@ def rename(old, new):
         old (string): path to the original video recording
         new (string): path to the new recording name
     """
-    global rename_counter
-    rename_counter += 1
+    
+    
     
     try:
         if state is False:
+            time.sleep(5)
             os.rename(old, new)
-            rename_counter = 0
-        elif state is True and rename_counter <=10:
+
+        elif state is True:
             time.sleep(1)
             rename(old, new)
             
@@ -117,8 +129,7 @@ def rename(old, new):
         if state is False:
             #renames the file only when there is no longer a recording output from OBS
             rename(old, new)
-            rename_counter = 0
-        elif state is True and rename_counter <=10:
+        elif state is True:
             time.sleep(1)
             rename(old, new)
     
@@ -139,6 +150,7 @@ def stop_recording():
     """stops recording
     """
     obs_ws.stop_record() #hopefully self explanatory
+    time.sleep(2)
     rename(old_path, new_path)
 
         
@@ -148,7 +160,7 @@ cl.callback.register(on_record_state_changed)
 
 # ------------------------------------------------------------------------------------
 
-layout = [[sg.Text("Enter incident number (Numbers ONLY): ")],
+layout = [[sg.Text("Enter incident number: ")],
             [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Button("OK", key="set"), sg.Push()],
             [sg.Push(), sg.Text("Please press OK before recording", key="status_text"), sg.Push()],
             [sg.Push(), sg.Button("Start Recording", key="record", disabled=True, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
@@ -173,7 +185,6 @@ while True:
         
     
     if event == "stop_recording":
-        time.sleep(2)
         window["status_text"].update("Renaming...")
         stop_recording()
         window["stop_recording"].update(disabled=True)
