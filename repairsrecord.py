@@ -16,7 +16,7 @@ def connect():
         # event object for callback functions
         cl = obs.EventClient(host="localhost", port="4455", password="obsppman")
         
-        obs_ws.set_input_mute("Desktop Audio", True) # mutes the Desktop Audio
+        # obs_ws.set_input_mute("Desktop Audio", True) # mutes the Desktop Audio
         obs_ws.set_input_mute("Mic/Aux", True) # mutes the microphone
         
     except ConnectionRefusedError:
@@ -162,19 +162,22 @@ cl.callback.register(on_record_state_changed)
 # ------------------------------------------------------------------------------------
 
 tab1 = [[sg.Text("Enter incident number: ")],
-            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Button("OK", key="set"), sg.Push()],
-            [sg.Push(), sg.Text("Please press OK before recording", key="status_text"), sg.Push()],
-            [sg.Push(), sg.Button("Start Recording", key="record", disabled=True, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
+            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Push()],
+            [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
+            [sg.Push(), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
 
 tab2 = [[sg.Text("Enter new file name:", key="rename_instr")],
                 [sg.Input(key="rename_input"), sg.Button("OK", key="rename_ok")],
                 [sg.Text("Enter old file name")],
                 [sg.Input(key="rename_input2", disabled=True), sg.Button("OK", key="rename_ok2", disabled=True)],
-                [sg.Text("Enter new file name and hit OK", key="rename_status")],
-                [sg.Push(), sg.Button("Rename", disabled=True), sg.Push()]]
+                [sg.Text("", key="rename_status")],
+                [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
 
-layout = [[sg.Titlebar("Repairs Record", background_color="black")],
-          [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
+# layout = [[sg.Titlebar("Repairs Record", background_color="black")],
+#           [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
+
+#layout for mac since titlebar causes issues with input element (unable to input characters)
+layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]] 
 
 
 window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_top=True)
@@ -183,24 +186,20 @@ window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_
 while True:
     event, values = window.read()
     
-    if event == "set":
-        get_new_name(values["incident"])
-        if record_ready is True:
-            window["record"].update(disabled=False)
-            window["status_text"].update("Ready to record")
-        
     if event == "record":
-        start_recording()
-        window["status_text"].update("Recording...")
-        window["stop_recording"].update(disabled=False)
+        get_new_name(values["incident"])
+       
+        if record_ready is True: 
+            start_recording()
+            window["status_text"].update("Recording...")
+            window["stop_recording"].update(disabled=False)
         
     
     if event == "stop_recording":
         window["status_text"].update("Renaming...")
         stop_recording()
         window["stop_recording"].update(disabled=True)
-        window["record"].update(disabled=True)
-        window["status_text"].update("Please press OK before recording")
+        window["status_text"].update("")
         window["incident"].update("")
         
     if event == "rename_ok":
