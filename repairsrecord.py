@@ -16,7 +16,13 @@ def connect():
         # event object for callback functions
         cl = obs.EventClient(host="localhost", port="4455", password="obsppman")
         
+        # obs_ws.set_input_mute("Desktop Audio", True) # mutes the Desktop Audio
         obs_ws.set_input_mute("Mic/Aux", True) # mutes the microphone
+
+        global source_id
+        source_data = obs_ws.get_scene_item_id("Top-Down", "Recording Active")
+        source_id = source_data.scene_item_id
+        obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
         
     except ConnectionRefusedError:
         # checks for connection error
@@ -139,6 +145,7 @@ def rename(old, new):
 def start_recording():
     """starts recording and begins callback function
     """
+    obs_ws.set_scene_item_enabled("Top-Down", source_id, True)
     obs_ws.start_record() # start recording
     cl.callback.register(on_record_state_changed) # begin callback function
     # following 2 lines might be redundant code. Will be determined at a later time (probably)
@@ -150,6 +157,7 @@ def stop_recording():
     """stops recording
     """
     obs_ws.stop_record() #hopefully self explanatory
+    obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
     time.sleep(2)
     rename(old_path, new_path)
 
@@ -160,37 +168,87 @@ cl.callback.register(on_record_state_changed)
 
 # ------------------------------------------------------------------------------------
 
-layout = [[sg.Text("Enter incident number: ")],
-            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Button("OK", key="set"), sg.Push()],
-            [sg.Push(), sg.Text("Please press OK before recording", key="status_text"), sg.Push()],
-            [sg.Push(), sg.Button("Start Recording", key="record", disabled=True, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
+tab1 = [[sg.Text("Enter incident number: ")],
+            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Push()],
+            [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
+            [sg.Push(), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
+
+tab2 = [[sg.Text("Enter new file name:", key="rename_instr")],
+                [sg.Input(key="rename_input"), sg.Button("OK", key="rename_ok")],
+                [sg.Text("Enter old file name")],
+                [sg.Input(key="rename_input2", disabled=True), sg.Button("OK", key="rename_ok2", disabled=True)],
+                [sg.Text("", key="rename_status")],
+                [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
+
+# layout = [[sg.Titlebar("Repairs Record", background_color="black")],
+#           [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
+
+#layout for mac since titlebar causes issues with input element (unable to input characters)
+layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]] 
 
 
-window = sg.Window("DTS Repairs Record", layout=layout, size=(350,130), keep_on_top=True)
+window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_top=True)
 
 
 while True:
     event, values = window.read()
+                
     
-    if event == "set":
-        get_new_name(values["incident"])
-        if record_ready is True:
-            window["record"].update(disabled=False)
-            window["status_text"].update("Ready to record")
-        
     if event == "record":
-        start_recording()
-        window["status_text"].update("Recording...")
-        window["stop_recording"].update(disabled=False)
+        get_new_name(values["incident"])
+       
+        if record_ready is True: 
+            start_recording()
+            window["status_text"].update("Recording...")
+            window["stop_recording"].update(disabled=False)
         
     
     if event == "stop_recording":
         window["status_text"].update("Renaming...")
         stop_recording()
         window["stop_recording"].update(disabled=True)
-        window["record"].update(disabled=True)
-        window["status_text"].update("Please press OK before recording")
+        window["status_text"].update("")
         window["incident"].update("")
+        
+    if event == "rename_ok":
+        record_directory_call = obs_ws.send("GetRecordDirectory")
+        path_changed_to = record_directory_call.record_directory + "//" + values["rename_input"] + ".mp4"
+        window["rename_input2"].update(disabled=False)
+        window["rename_ok2"].update(disabled=False)
+        window["rename_status"].update("Enter old file name and hit OK")
+
+    if event == "rename_ok2":
+        record_directory_call = obs_ws.send("GetRecordDirectory")
+        path_to_change = record_directory_call.record_directory + "//" + values["rename_input2"] + ".mp4"
+        window["Rename"].update(disabled=False)
+        window["rename_status"].update("Ready to rename")
+        
+    if event == "Rename":
+        try:
+            os.rename(path_to_change, path_changed_to)
+            window["rename_input"].update("")
+            window["rename_input2"].update("")
+            window["rename_input2"].update(disabled=True)
+            window["rename_ok2"].update(disabled=True)
+            window["Rename"].update(disabled=True)
+            window["rename_status"].update("File renamed")
+            
+        except FileNotFoundError:
+            window["rename_status"].update("The old file stated does not exist")
+            window["rename_input"].update("")
+            window["rename_input2"].update("")
+            window["rename_input2"].update(disabled=True)
+            window["rename_ok2"].update(disabled=True)
+            window["Rename"].update(disabled=True)
+            
+        except FileExistsError:
+            window["rename_status"].update("The new file name already exists")
+            window["rename_input"].update("")
+            window["rename_input2"].update("")
+            window["rename_input2"].update(disabled=True)
+            window["rename_ok2"].update(disabled=True)
+            window["Rename"].update(disabled=True)
+            
 
         
     if event == sg.WIN_CLOSED:

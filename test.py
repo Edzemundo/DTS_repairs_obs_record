@@ -1,15 +1,10 @@
-new_path = "C://Users//agyekume//Videos//INC2_21.mkv"
+import obsws_python as obs
 
-paths = new_path.split("//")
-last_path = paths[-1].split(".")
-filename = last_path[0]
-if "_" in filename:
-    filenum = filename[filename.index("_")+1:]
-    new_filename = filename.replace(filenum, str(int(filenum)+1))
-    new_path = new_path.replace(filename, new_filename)
-else:
-    new_filename = filename + "_1"
-    new_path = new_path.replace(filename, new_filename)
+client = obs.ReqClient(host="localhost", port="4455", password="obsppman")
 
-print(new_path)
-print("")
+Event = obs.EventClient(host="localhost", port="4455", password="obsppman")
+
+data = client.get_scene_item_id("Scene", "Image")
+
+
+print(data.scene_item_id)
