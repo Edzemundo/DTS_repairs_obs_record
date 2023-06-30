@@ -18,6 +18,11 @@ def connect():
         
         # obs_ws.set_input_mute("Desktop Audio", True) # mutes the Desktop Audio
         obs_ws.set_input_mute("Mic/Aux", True) # mutes the microphone
+
+        global source_id
+        source_data = obs_ws.get_scene_item_id("Top-Down", "Recording Active")
+        source_id = source_data.scene_item_id
+        obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
         
     except ConnectionRefusedError:
         # checks for connection error
@@ -140,6 +145,7 @@ def rename(old, new):
 def start_recording():
     """starts recording and begins callback function
     """
+    obs_ws.set_scene_item_enabled("Top-Down", source_id, True)
     obs_ws.start_record() # start recording
     cl.callback.register(on_record_state_changed) # begin callback function
     # following 2 lines might be redundant code. Will be determined at a later time (probably)
@@ -151,6 +157,7 @@ def stop_recording():
     """stops recording
     """
     obs_ws.stop_record() #hopefully self explanatory
+    obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
     time.sleep(2)
     rename(old_path, new_path)
 
@@ -185,6 +192,7 @@ window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_
 
 while True:
     event, values = window.read()
+                
     
     if event == "record":
         get_new_name(values["incident"])
