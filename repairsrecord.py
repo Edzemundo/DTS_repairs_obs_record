@@ -167,6 +167,7 @@ cl.callback.register(on_record_state_changed)
 
 
 # ------------------------------------------------------------------------------------
+# GUI starts here
 
 tab1 = [[sg.Text("Enter incident number: ")],
             [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Push()],
@@ -180,11 +181,18 @@ tab2 = [[sg.Text("Enter new file name:", key="rename_instr")],
                 [sg.Text("", key="rename_status")],
                 [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
 
+tab3 = [[sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
+        [sg.Input(key="start time")],
+        [sg.Text("Enter end time HH:MM:SS (seperated by colons):")],
+        [sg.Input(key="end time")],
+        [sg.Push(), sg.Button("Confirm Times", key="cut confirm"), sg.Push()],
+        [sg.Push(), sg.Button("Cut", key="cut cut"), sg.Push()]]
+
 # layout = [[sg.Titlebar("Repairs Record", background_color="black")],
 #           [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
 
 #layout for mac since titlebar causes issues with input element (unable to input characters)
-layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]] 
+layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2), sg.Tab("Cut", tab3)]])]] 
 
 
 window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_top=True)
