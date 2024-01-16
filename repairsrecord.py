@@ -74,7 +74,7 @@ def get_new_name(incident):
         filename = f"INC{incident}" + ".mp4"
         record_directory_call = obs_ws.send("GetRecordDirectory")
         global new_path
-        new_path = record_directory_call.record_directory + f"\{filename}"
+        new_path = record_directory_call.record_directory + f"\\{filename}"
         new_path = new_path.replace("\\","//")
         
         record_ready = True
@@ -174,9 +174,9 @@ tab1 = [[sg.Text("Enter incident number: ")],
             [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
             [sg.Push(), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
 
-tab2 = [[sg.Text("Enter new file name (do not add extension):", key="rename_instr")],
-                [sg.Input(key="rename_input"), sg.Button("OK", key="rename_ok")],
-                [sg.Text("Enter old file name (do not add extension):")],
+tab2 = [[sg.Text("Enter old file name (do not add extension) - case sensitive:")],
+                [sg.Input(key="rename_input", disabled=False), sg.Button("OK", key="rename_ok", disabled=False)],
+                [sg.Text("Enter new file name (do not add extension) - case sensitive:", key="rename_instr")],
                 [sg.Input(key="rename_input2", disabled=True), sg.Button("OK", key="rename_ok2", disabled=True)],
                 [sg.Text("", key="rename_status")],
                 [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
@@ -195,7 +195,7 @@ tab3 = [[sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
 layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2), sg.Tab("Cut", tab3)]])]] 
 
 
-window = sg.Window("DTS Repairs Record", layout=layout, size=(380,230), keep_on_top=True)
+window = sg.Window("DTS Repairs Record", layout=layout, size=(400,230), keep_on_top=True)
 
 
 while True:
@@ -220,14 +220,14 @@ while True:
         
     if event == "rename_ok":
         record_directory_call = obs_ws.send("GetRecordDirectory")
-        path_changed_to = record_directory_call.record_directory + "//" + values["rename_input"] + ".mp4"
+        path_to_change = record_directory_call.record_directory + "//" + values["rename_input"] + ".mp4"
         window["rename_input2"].update(disabled=False)
         window["rename_ok2"].update(disabled=False)
-        window["rename_status"].update("Enter old file name and hit OK")
+        window["rename_status"].update("Enter new file name and hit OK")
 
     if event == "rename_ok2":
         record_directory_call = obs_ws.send("GetRecordDirectory")
-        path_to_change = record_directory_call.record_directory + "//" + values["rename_input2"] + ".mp4"
+        path_changed_to = record_directory_call.record_directory + "//" + values["rename_input2"] + ".mp4"
         window["Rename"].update(disabled=False)
         window["rename_status"].update("Ready to rename")
         
@@ -251,6 +251,14 @@ while True:
             
         except FileExistsError:
             window["rename_status"].update("The new file name already exists")
+            window["rename_input"].update("")
+            window["rename_input2"].update("")
+            window["rename_input2"].update(disabled=True)
+            window["rename_ok2"].update(disabled=True)
+            window["Rename"].update(disabled=True)
+            
+        except NameError:
+            window["rename_status"].update("File names not confirmed/found. Hit OK before rename.")
             window["rename_input"].update("")
             window["rename_input2"].update("")
             window["rename_input2"].update(disabled=True)
