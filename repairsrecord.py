@@ -20,13 +20,13 @@ def connect():
         obs_ws.set_input_mute("Mic/Aux", True) # mutes the microphone
 
         global source_id
-        source_data = obs_ws.get_scene_item_id("Top-Down", "Recording Active")
+        source_data = obs_ws.get_scene_item_id("Scene", "Recording Active")
         source_id = source_data.scene_item_id
-        obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
+        obs_ws.set_scene_item_enabled("Scene", source_id, False)
         
     except ConnectionRefusedError:
         # checks for connection error
-        sg.popup("Connection to OBS unsuccessful - OBS may not be opened or set up correctly", no_titlebar=True)
+        sg.popup("Connection to OBS unsuccessful - OBS or its websocket may not be opened or set up correctly", no_titlebar=True)
         sys.exit()
     
 
@@ -145,7 +145,7 @@ def rename(old, new):
 def start_recording():
     """starts recording and begins callback function
     """
-    obs_ws.set_scene_item_enabled("Top-Down", source_id, True)
+    obs_ws.set_scene_item_enabled("Scene", source_id, True)
     obs_ws.start_record() # start recording
     cl.callback.register(on_record_state_changed) # begin callback function
     # following 2 lines might be redundant code. Will be determined at a later time (probably)
@@ -157,7 +157,7 @@ def stop_recording():
     """stops recording
     """
     obs_ws.stop_record() #hopefully self explanatory
-    obs_ws.set_scene_item_enabled("Top-Down", source_id, False)
+    obs_ws.set_scene_item_enabled("Scene", source_id, False)
     time.sleep(2)
     rename(old_path, new_path)
 
@@ -174,9 +174,9 @@ tab1 = [[sg.Text("Enter incident number: ")],
             [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
             [sg.Push(), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
 
-tab2 = [[sg.Text("Enter new file name:", key="rename_instr")],
+tab2 = [[sg.Text("Enter new file name (do not add extension):", key="rename_instr")],
                 [sg.Input(key="rename_input"), sg.Button("OK", key="rename_ok")],
-                [sg.Text("Enter old file name")],
+                [sg.Text("Enter old file name (do not add extension):")],
                 [sg.Input(key="rename_input2", disabled=True), sg.Button("OK", key="rename_ok2", disabled=True)],
                 [sg.Text("", key="rename_status")],
                 [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
