@@ -183,34 +183,37 @@ cl.callback.register(on_record_state_changed)
 # -------------------------------------------------------------------------------------------------------
 # GUI starts here
 
-tab1 = [[sg.Text("Enter incident number: ")],
-            [sg.Push(), sg.Input(size=(35), key="incident", justification="c"), sg.Push()],
-            [sg.Push(), sg.Text("", key="status_text"), sg.Push()],
-            [sg.Push(), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push()]]
+tab1 = [[sg.Text("Enter incident number: ", background_color="#000000")],
+            [sg.Push(background_color="#000000"), sg.Input(size=(35), key="incident", justification="c"), sg.Push(background_color="#000000")],
+            [sg.Push(background_color="#000000"), sg.Text("", key="status_text", background_color="#000000"), sg.Push(background_color="#000000")],
+            [sg.Push(background_color="#000000"), sg.Button("Start Recording", key="record", disabled=False, disabled_button_color="black"), sg.Button("Stop Recording", key="stop_recording", disabled=True, disabled_button_color="black"), sg.Push(background_color="#000000")]]
 
-tab2 = [[sg.Text("Enter old file name (do not add extension) - case sensitive:")],
+tab2 = [[sg.Text("Enter old file name (do not add extension) - case sensitive:", background_color="#000000")],
                 [sg.Input(key="rename_input", disabled=False), sg.Button("OK", key="rename_ok", disabled=False)],
-                [sg.Text("Enter new file name (do not add extension) - case sensitive:", key="rename_instr")],
+                [sg.Text("Enter new file name (do not add extension) - case sensitive:", key="rename_instr", background_color="#000000")],
                 [sg.Input(key="rename_input2", disabled=True), sg.Button("OK", key="rename_ok2", disabled=True)],
-                [sg.Text("", key="rename_status")],
-                [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
+                [sg.Text("", key="rename_status", background_color="#000000")],
+                [sg.Push(background_color="#000000"), sg.Button("Rename", disabled=False), sg.Push(background_color="#000000")]]
 
-tab3 = [[sg.Text("Enter file name:")],
-        [sg.Push(),sg.Input(key="cut_input"), sg.Push()], 
-        [sg.Push(), sg.Button("OK", key="cut_okay"), sg.Push()],
-        [sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
-        [sg.Push(),sg.Input(key="start time", disabled=True), sg.Push()],
-        [sg.Text("Enter end time HH:MM:SS (seperated by colons):")],
-        [sg.Push(),sg.Input(key="end time", disabled=True), sg.Push()],
-        [sg.Push(), sg.Text("", key="cut_status"), sg.Push()],
-        [sg.Checkbox("Make copy", default=True, key="cut_copy")],
-        [sg.Push(), sg.Button("Confirm Times", key="cut_confirm", disabled=True), sg.Push()],
-        [sg.Push(), sg.Button("Cut", key="cut_cut", disabled=True), sg.Push()]]
+tab3 = [[sg.Text("Enter file name:", background_color="#000000")],
+        [sg.Push(background_color="#000000"),sg.Input(key="cut_input"), sg.Push(background_color="#000000")], 
+        [sg.Push(background_color="#000000"), sg.Button("OK", key="cut_okay"), sg.Push(background_color="#000000")],
+        [sg.Text("Enter start time HH:MM:SS (seperated by colons):", background_color="#000000")],
+        [sg.Push(background_color="#000000"),sg.Input(key="start time", disabled=True), sg.Push(background_color="#000000")],
+        [sg.Text("Enter end time HH:MM:SS (seperated by colons):", background_color="#000000")],
+        [sg.Push(background_color="#000000"),sg.Input(key="end time", disabled=True), sg.Push(background_color="#000000")],
+        [sg.Push(background_color="#000000"), sg.Text("", key="cut_status", background_color="#000000"), sg.Push(background_color="#000000")],
+        [sg.Checkbox("Make copy", default=True, key="cut_copy", background_color="#000000")],
+        [sg.Push(background_color="#000000"), sg.Button("Confirm Times", key="cut_confirm", disabled=True), sg.Push(background_color="#000000")],
+        [sg.Push(background_color="#000000"), sg.Button("Cut", key="cut_cut", disabled=True), sg.Push(background_color="#000000")]]
 
 # layout = [[sg.Titlebar("Repairs Record", background_color="black")],
 #           [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
 
 #layout for mac since titlebar causes issues with input element (unable to input characters)
+sg.theme("DarkBlack")
+
+
 layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2), sg.Tab("Cut", tab3)]])]] 
 
 
@@ -289,7 +292,7 @@ while True:
         record_directory_call = obs_ws.send("GetRecordDirectory")
         global cut_path
         cut_path = record_directory_call.record_directory + "//" + values["cut_input"] + ".mkv"
-        cut_path_copy = record_directory_call.record_directory + "//" + values["cut_input"] + "_copy.mkv"
+        cut_path_copy = record_directory_call.record_directory + "//" + values["cut_input"] + "_cutCopy.mkv"
         window["cut_confirm"].update(disabled=False)
         window["start time"].update(disabled=False)
         window["end time"].update(disabled=False)
@@ -303,7 +306,7 @@ while True:
         for i in start_time_split:
             # if type(i) == int or type(i) == float:
             try:
-                i = int(i)
+                i = float(i)
             except ValueError:
                 passed = False
             else:
@@ -314,7 +317,7 @@ while True:
         end_time_split = end_time.split(":")
         for i in end_time_split:
             try:
-                i = int(i)
+                i = float(i)
             except ValueError:
                 passed = False
             else:
