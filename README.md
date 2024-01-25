@@ -16,7 +16,7 @@ Instructions
   2. Set the Port as 4455 (should be the default port)
   3. Set the password as "obsppman" (password was made on short notice - not my fault), do not add quotation marks. Let me know if it REALLY needs to be changed.
   4.  Set the video input source being used for recording as the name "Camera" - case specific.
-  5.  Set the active sign as the name "Recording Active" - case and space specific. This can be text or an image to show that recording is active. It is turned on whenever the record button is selected.
+  5.  Set the active sign as the name "Recording Active" - case and space specific. This can be text or an image to show that recording is active. Make sure it is at the top of the sources list so it always shows. It is turned on whenever the record button is selected.
 
 - Enter the incident number with or without "INC" - not case specific.
 
