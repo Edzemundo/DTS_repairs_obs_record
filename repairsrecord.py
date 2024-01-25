@@ -1,6 +1,7 @@
 from datetime import datetime
 import obsws_python as obs
 import PySimpleGUI as sg
+import subprocess
 import time
 import sys
 import os
@@ -71,7 +72,7 @@ def get_new_name(incident):
         # formats name and path of new video file under variable "new_path"
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime("%m-%d-%Y_%H-%M")
-        filename = f"INC{incident}" + ".mp4"
+        filename = f"INC{incident}" + ".mkv"
         record_directory_call = obs_ws.send("GetRecordDirectory")
         global new_path
         new_path = record_directory_call.record_directory + f"\\{filename}"
@@ -106,7 +107,6 @@ def rename(old, new):
         old (string): path to the original video recording
         new (string): path to the new recording name
     """
-    
     
     
     try:
@@ -160,13 +160,27 @@ def stop_recording():
     obs_ws.set_scene_item_enabled("Scene", source_id, False)
     time.sleep(2)
     rename(old_path, new_path)
+    
+def cut(start, end, path, path2):
+    """cuts video
+    """
+    if values["cut_copy"] == True:
+        subprocess.run(f"ffmpeg -y -noaccurate_seek -i {path} -ss {start} -to {end} -c copy {path2}", shell=True)
+        
+    else:        
+        subprocess.run(f"ffmpeg -y -noaccurate_seek -i {path} -ss {start} -to {end} -c copy {path2}", shell=True)
+        os.replace(path2, path)
+        
+        
+        
+    
 
         
 connect()
 cl.callback.register(on_record_state_changed)
 
 
-# ------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------
 # GUI starts here
 
 tab1 = [[sg.Text("Enter incident number: ")],
@@ -181,12 +195,17 @@ tab2 = [[sg.Text("Enter old file name (do not add extension) - case sensitive:")
                 [sg.Text("", key="rename_status")],
                 [sg.Push(), sg.Button("Rename", disabled=False), sg.Push()]]
 
-tab3 = [[sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
-        [sg.Input(key="start time")],
+tab3 = [[sg.Text("Enter file name:")],
+        [sg.Push(),sg.Input(key="cut_input"), sg.Push()], 
+        [sg.Push(), sg.Button("OK", key="cut_okay"), sg.Push()],
+        [sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
+        [sg.Push(),sg.Input(key="start time", disabled=True), sg.Push()],
         [sg.Text("Enter end time HH:MM:SS (seperated by colons):")],
-        [sg.Input(key="end time")],
-        [sg.Push(), sg.Button("Confirm Times", key="cut confirm"), sg.Push()],
-        [sg.Push(), sg.Button("Cut", key="cut cut"), sg.Push()]]
+        [sg.Push(),sg.Input(key="end time", disabled=True), sg.Push()],
+        [sg.Push(), sg.Text("", key="cut_status"), sg.Push()],
+        [sg.Checkbox("Make copy", default=True, key="cut_copy")],
+        [sg.Push(), sg.Button("Confirm Times", key="cut_confirm", disabled=True), sg.Push()],
+        [sg.Push(), sg.Button("Cut", key="cut_cut", disabled=True), sg.Push()]]
 
 # layout = [[sg.Titlebar("Repairs Record", background_color="black")],
 #           [sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2)]])]]
@@ -195,7 +214,7 @@ tab3 = [[sg.Text("Enter start time HH:MM:SS (seperated by colons):")],
 layout = [[sg.TabGroup([[sg.Tab("Record", tab1), sg.Tab("Rename", tab2), sg.Tab("Cut", tab3)]])]] 
 
 
-window = sg.Window("DTS Repairs Record", layout=layout, size=(400,230), keep_on_top=True)
+window = sg.Window("DTS Repairs Record", layout=layout, size=(420,365), keep_on_top=True)
 
 
 while True:
@@ -220,14 +239,14 @@ while True:
         
     if event == "rename_ok":
         record_directory_call = obs_ws.send("GetRecordDirectory")
-        path_to_change = record_directory_call.record_directory + "//" + values["rename_input"] + ".mp4"
+        path_to_change = record_directory_call.record_directory + "//" + values["rename_input"] + ".mkv"
         window["rename_input2"].update(disabled=False)
         window["rename_ok2"].update(disabled=False)
         window["rename_status"].update("Enter new file name and hit OK")
 
     if event == "rename_ok2":
         record_directory_call = obs_ws.send("GetRecordDirectory")
-        path_changed_to = record_directory_call.record_directory + "//" + values["rename_input2"] + ".mp4"
+        path_changed_to = record_directory_call.record_directory + "//" + values["rename_input2"] + ".mkv"
         window["Rename"].update(disabled=False)
         window["rename_status"].update("Ready to rename")
         
@@ -264,6 +283,72 @@ while True:
             window["rename_input2"].update(disabled=True)
             window["rename_ok2"].update(disabled=True)
             window["Rename"].update(disabled=True)
+            
+            
+    if event == "cut_okay":
+        record_directory_call = obs_ws.send("GetRecordDirectory")
+        global cut_path
+        cut_path = record_directory_call.record_directory + "//" + values["cut_input"] + ".mkv"
+        cut_path_copy = record_directory_call.record_directory + "//" + values["cut_input"] + "_copy.mkv"
+        window["cut_confirm"].update(disabled=False)
+        window["start time"].update(disabled=False)
+        window["end time"].update(disabled=False)
+        window["cut_status"].update("Enter start and stop times")
+        
+        
+    if event == "cut_confirm":
+        passed = None
+        start_time = values["start time"]
+        start_time_split = start_time.split(":")
+        for i in start_time_split:
+            # if type(i) == int or type(i) == float:
+            try:
+                i = int(i)
+            except ValueError:
+                passed = False
+            else:
+                if passed != False:
+                    passed = True
+        
+        end_time = values["end time"]
+        end_time_split = end_time.split(":")
+        for i in end_time_split:
+            try:
+                i = int(i)
+            except ValueError:
+                passed = False
+            else:
+                if passed != False:
+                    passed = True
+        
+        if passed == False:
+            window["cut_status"]. update("Entered times are not numbers")
+            window["start time"].update("")
+            window["end time"].update("")
+            start_time = None
+            end_time = None
+        elif len(start_time_split) < 2 or len(end_time) < 2:
+            window["cut_status"].update("Time values not entered properly")
+            window["start time"].update("")
+            window["end time"].update("")
+            start_time = None
+            end_time = None
+        else:
+            window["cut_status"].update("Time stamps confirmed!")
+            window["cut_cut"].update(disabled=False)
+            
+            
+            
+    if event == "cut_cut":
+        cut(start_time, end_time, cut_path, cut_path_copy)
+        print(start_time, end_time)
+        window["start time"].update("")
+        window["end time"].update("")
+        window["cut_confirm"].update(disabled=True)
+        window["start time"].update(disabled=True)
+        window["end time"].update(disabled=True)
+        window["cut_cut"].update(disabled=True)
+        window["cut_status"].update("")
             
 
         
