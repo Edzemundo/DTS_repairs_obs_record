@@ -30,7 +30,6 @@ Instructions
 
 ***Anytime application is being used after installation just launch OBS first then launch the application. Audio is automatically muted but feel free to double check before saying something 'spicy'.***
 
-=======
 # DTS_repairs_obs_record
 
 Connects to OBS via OBS Web Server. Allows the user to name a recording, then start and stop said recording (OBS has to be open). File is renamed after the recording is stopped in the location where it was saved by OBS.
